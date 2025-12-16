@@ -15,7 +15,7 @@ import (
 // Embed index.html directly into the binary
 // -------------------------------------------------
 
-//go:embed index.html
+//go:embed page.html
 var indexHTML []byte
 
 // -------------------------------------------------
