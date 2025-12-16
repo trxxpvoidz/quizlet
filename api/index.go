@@ -11,14 +11,14 @@ import (
 	"strings"
 )
 
-// -------------------------------------------------
-// Embed index.html directly into the binary
-// -------------------------------------------------
+// -----------------------
+// Embedded HTML page
+// -----------------------
 
 //go:embed page.html
 var indexHTML []byte
 
-// -------------------------------------------------
+// -----------------------
 
 func internalServerError(w http.ResponseWriter, err error) {
 	if err != nil {
@@ -38,19 +38,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	htmlProxy := os.Getenv("HTTP_PROXY_ENABLE") == "true"
 
-	// CORS
+	// CORS headers
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-PROXY-HOST, X-PROXY-SCHEME")
 
+	// OPTIONS preflight
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	// -------------------------------------------------
-	// Serve embedded index.html at /
-	// -------------------------------------------------
+	// Serve the embedded HTML at /
 	if r.URL.Path == "/" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -58,9 +57,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// -------------------------------------------------
+	// -----------------------
 	// Proxy logic
-	// -------------------------------------------------
+	// -----------------------
 
 	re := regexp.MustCompile(`^/*(https?:)/*`)
 	u := re.ReplaceAllString(r.URL.Path, "$1//")
