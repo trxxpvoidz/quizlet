@@ -39,11 +39,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect to the GitHub repository
-	if r.URL.Path == "/" {
-		http.Redirect(w, r, "https://github.com/TBXark/vercel-proxy", http.StatusMovedPermanently)
+// Serve public/index.html instead of redirecting
+if r.URL.Path == "/" {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	data, err := os.ReadFile("public/index.html")
+	if err != nil {
+		http.Error(w, "public/index.html not found", http.StatusNotFound)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+	return
+}
 
 	// Get the URL to proxy
 	re := regexp.MustCompile(`^/*(https?:)/*`)
