@@ -1,6 +1,7 @@
 package api
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +10,15 @@ import (
 	"regexp"
 	"strings"
 )
+
+// -------------------------------------------------
+// Embed index.html directly into the binary
+// -------------------------------------------------
+
+//go:embed index.html
+var indexHTML []byte
+
+// -------------------------------------------------
 
 func internalServerError(w http.ResponseWriter, err error) {
 	if err != nil {
@@ -28,33 +38,30 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	htmlProxy := os.Getenv("HTTP_PROXY_ENABLE") == "true"
 
-	// Set the CORS headers
+	// CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-PROXY-HOST, X-PROXY-SCHEME")
 
-	// Handle the OPTIONS preflight request
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-// Serve public/index.html instead of redirecting
-if r.URL.Path == "/" {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	data, err := os.ReadFile("public/index.html")
-	if err != nil {
-		http.Error(w, "public/index.html not found", http.StatusNotFound)
+	// -------------------------------------------------
+	// Serve embedded index.html at /
+	// -------------------------------------------------
+	if r.URL.Path == "/" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(indexHTML)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(data)
-	return
-}
+	// -------------------------------------------------
+	// Proxy logic
+	// -------------------------------------------------
 
-	// Get the URL to proxy
 	re := regexp.MustCompile(`^/*(https?:)/*`)
 	u := re.ReplaceAllString(r.URL.Path, "$1//")
 	if r.URL.RawQuery != "" {
@@ -65,56 +72,35 @@ if r.URL.Path == "/" {
 		return
 	}
 
-	// Create a new request
 	req, err := http.NewRequest(r.Method, u, r.Body)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
+
 	for k, v := range r.Header {
 		for _, vv := range v {
 			req.Header.Add(k, vv)
 		}
 	}
-	if htmlProxy && r.Header.Get("Accept-Encoding") != "" {
-		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			req.Header.Set("Accept-Encoding", "gzip")
-		}
+
+	if htmlProxy && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		req.Header.Set("Accept-Encoding", "gzip")
 	}
 
-	// Send the request to the real server
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	defer func(writer http.ResponseWriter, response *http.Response) {
-		internalServerError(writer, response.Body.Close())
-	}(w, resp)
+	defer resp.Body.Close()
 
-	if e := proxyRaw(w, resp, r); e != nil {
-		internalServerError(w, e)
-		return
-	}
-
-	w.WriteHeader(resp.StatusCode)
-}
-
-func proxyRaw(w http.ResponseWriter, resp *http.Response, req *http.Request) error {
 	for k, v := range resp.Header {
 		for _, vv := range v {
 			w.Header().Add(k, vv)
 		}
 	}
-	if w.Header().Get("Referer") != "" {
-		w.Header().Del("Referer")
-		w.Header().Add("Referer", req.Host)
-	}
 
-	// Copy the response body to the output stream
-	_, err := io.Copy(w, resp.Body)
-	if err != nil {
-		return err
-	}
-	return nil
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
 }
