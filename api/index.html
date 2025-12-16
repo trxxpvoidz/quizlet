@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search Proxy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  margin: 0;
+  background: #0f0f13;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.box {
+  background: #151226;
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
+}
+input {
+  background: #0f0f13;
+  color: white;
+}
+button {
+  background: #4f6cff;
+  color: white;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Search</h2>
+
+  <input id="engine" value="https://www.google.com/search?q=" />
+  <input id="query" placeholder="Search…" autofocus />
+  <button onclick="go()">Search</button>
+</div>
+
+<script>
+function go() {
+  const e = engine.value.trim();
+  const q = query.value.trim();
+  if (!e || !q) return;
+  location.href = e + encodeURIComponent(q);
+}
+query.addEventListener("keydown", e => {
+  if (e.key === "Enter") go();
+});
+</script>
+</body>
+</html>
