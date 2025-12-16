@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Simple Search Proxy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f0f13;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: #151226;
+      padding: 24px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      text-align: center;
+      font-size: 1.4rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 16px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #0f0f13;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #4f6cff;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #3f59d8;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Search</h1>
+
+    <label for="engine">Search URL</label>
+    <input
+      id="engine"
+      type="text"
+      value="https://www.google.com/search?q="
+    />
+
+    <label for="query">Search query</label>
+    <input
+      id="query"
+      type="text"
+      placeholder="Type something and press Enter"
+      autofocus
+    />
+
+    <button onclick="doSearch()">Search</button>
+  </div>
+
+  <script>
+    function doSearch() {
+      const engine = document.getElementById("engine").value.trim();
+      const query = document.getElementById("query").value.trim();
+
+      if (!engine || !query) return;
+
+      // Navigate to full URL (works with your proxy)
+      window.location.href = engine + encodeURIComponent(query);
+    }
+
+    // Allow Enter key
+    document.getElementById("query").addEventListener("keydown", e => {
+      if (e.key === "Enter") doSearch();
+    });
+  </script>
+</body>
+</html>
